@@ -26,20 +26,12 @@ or it can be used as a relay to implement a chat server using its builtin
 [PubSub](https://redis.io/topics/pubsub)
 features.
 
-This Swift package includes the RESP protocol implementation and a simple
-Redis client.
+This Swift package contains a simple Redis client based on the
+protocol implementation
+[swift-nio-redis](https://github.com/SwiftNIOExtras/swift-nio-redis).
 We also provide an actual [Redis Server](https://github.com/NozeIO/redi-s)
 written in Swift, using SwiftNIO and SwiftNIO Redis.
 
-
-## Performance
-
-This implementation is focused on performance.
-It tries to reuse NIO `ByteBuffer`s as much as possible to avoid copies.
-
-The parser is based on a state machine, not on a buffering
-`ByteToMessageDecoder`/Encoder.
-That doesn't make it nice, but efficient ;-)
 
 ## Importing the module using Swift Package Manager
 
@@ -53,42 +45,14 @@ import PackageDescription
 let package = Package(
     name: "RedisTests",
     dependencies: [
-        .package(url: "https://github.com/NozeIO/swift-nio-redis.git", 
-                 from: "0.8.0")
+        .package(url: "https://github.com/NozeIO/swift-nio-redis-client.git", 
+                 from: "0.9.0")
     ],
     targets: [
-        .target(name: "MyProtocolTool",
-                dependencies: [ "NIORedis" ]),
         .target(name: "MyClientTool",
                 dependencies: [ "Redis" ])
     ]
 )
-```
-
-
-## Using the SwiftNIO Redis protocol handler
-
-The RESP protocol is implemented as a regular
-`ChannelHandler`, similar to `NIOHTTP1`.
-It takes incoming `ByteBuffer` data, parses that, and emits `RESPValue`
-items.
-Same the other way around, the user writes `RESPValue` (or `RESPEncodable`)
-objects, and the handler renders such into `ByteBuffer`s.
-
-The [NIORedis module](Sources/NIORedis/README.md) has a litte more
-information.
-
-To add the RESP handler to a NIO Channel pipeline, the `configureRedisPipeline`
-method is called, e.g.:
-
-```swift
-import NIORedis
-
-bootstrap.channelInitializer { channel in
-    channel.pipeline
-        .configureRedisPipeline()
-        .then { ... }
-}
 ```
 
 
@@ -140,7 +104,7 @@ client
 ## Status
 
 The
-[protocol implementation](Sources/NIORedis/)
+[protocol implementation](https://github.com/SwiftNIOExtras/swift-nio-redis)
 is considered complete. There are a few open ends
 in the `telnet` variant, yet the regular binary protocol is considered done.
 
