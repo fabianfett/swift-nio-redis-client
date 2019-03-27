@@ -76,6 +76,6 @@ public class RedisClientOptions : ConnectOptions {
     super.appendToDescription(&ms)
     if let database      = database      { ms += " #\(database)"     }
     if password != nil                   { ms += " pwd"              }
-    if let retryStrategy = retryStrategy { ms += " \(retryStrategy)" }
+    if retryStrategy != nil { ms += " has-retryStrategy-cb" }
   }
 }
