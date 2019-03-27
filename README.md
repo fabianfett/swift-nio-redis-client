@@ -1,6 +1,7 @@
 # SwiftNIO Redis Client
 
 ![Swift4](https://img.shields.io/badge/swift-4-blue.svg)
+![Swift5](https://img.shields.io/badge/swift-5-blue.svg)
 ![macOS](https://img.shields.io/badge/os-macOS-green.svg?style=flat)
 ![tuxOS](https://img.shields.io/badge/os-tuxOS-green.svg?style=flat)
 ![Travis](https://travis-ci.org/NozeIO/swift-nio-redis-client.svg?branch=master)
@@ -38,7 +39,7 @@ written in Swift, using SwiftNIO and SwiftNIO Redis.
 An example `Package.swift `importing the necessary modules:
 
 ```swift
-// swift-tools-version:4.0
+// swift-tools-version:5.0
 
 import PackageDescription
 
@@ -46,7 +47,7 @@ let package = Package(
     name: "RedisTests",
     dependencies: [
         .package(url: "https://github.com/NozeIO/swift-nio-redis-client.git", 
-                 from: "0.9.0")
+                 from: "0.10.0")
     ],
     targets: [
         .target(name: "MyClientTool",
