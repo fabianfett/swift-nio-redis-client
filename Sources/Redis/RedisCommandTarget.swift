@@ -343,17 +343,23 @@ import protocol NIORedis.RESPEncodable
 
 fileprivate extension EventLoopFuture {
   
+  #if swift(>=5)
+  #else
+    typealias Value = T
+  #endif
+  
   func whenCB(file: StaticString = #file, line: UInt = #line,
-              _ cb: @escaping ( Swift.Error?, T? ) -> Void) -> Void
+              _ cb: @escaping ( Swift.Error?, Value? ) -> Void) -> Void
   {
     self.map(file: file, line: line) { cb(nil, $0) }
         .whenFailure { cb($0, nil) }
   }
 }
 
-fileprivate extension EventLoopFuture where T == RESPValue {
+fileprivate extension EventLoopFuture where Value == RESPValue {
   
-  func whenCB<U: RedisTypeTransformable>(file: StaticString = #file, line: UInt = #line,
+  func whenCB<U: RedisTypeTransformable>(file: StaticString = #file,
+                                         line: UInt = #line,
               _ cb: @escaping ( Swift.Error?, U? ) -> Void) -> Void
   {
     self.map(file: file, line: line) {
@@ -372,9 +378,16 @@ public extension RedisCommandTarget {
           where T.Element : RESPEncodable
   {
     let call   = RedisCommandCall(values, eventLoop: eventLoop)
-    let future = call.promise.futureResult.thenThrowing {
-      try U.extractFromRESPValue($0)
-    }
+    
+    #if swift(>=5)
+      let future = call.promise.futureResult.flatMapThrowing {
+        try U.extractFromRESPValue($0)
+      }
+    #else
+      let future = call.promise.futureResult.thenThrowing {
+        try U.extractFromRESPValue($0)
+      }
+    #endif
     enqueueCommandCall(call)
     return future
   }
