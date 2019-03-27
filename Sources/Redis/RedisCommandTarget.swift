@@ -341,12 +341,12 @@ import class    NIO.EventLoopFuture
 import enum     NIORedis.RESPValue
 import protocol NIORedis.RESPEncodable
 
+#if swift(>=5)
+#else
+  fileprivate typealias Value = EventLoopFuture.T
+#endif
+
 fileprivate extension EventLoopFuture {
-  
-  #if swift(>=5)
-  #else
-    typealias Value = T
-  #endif
   
   func whenCB(file: StaticString = #file, line: UInt = #line,
               _ cb: @escaping ( Swift.Error?, Value? ) -> Void) -> Void

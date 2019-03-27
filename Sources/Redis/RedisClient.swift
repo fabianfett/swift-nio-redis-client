@@ -446,12 +446,21 @@ open class RedisClient : RedisCommandTarget {
   var channel : Channel? { @inline(__always) get { return state.channel } }
   
   public func quit() {
-    _enqueueCommandCall(RedisCommandCall(["QUIT"], eventLoop: eventLoop))
-      .whenComplete { _ in
-        self.state = .quit
-        self.subscribeListeners.removeAll()
-        self.messageListeners.removeAll()
-      }
+    #if swift(>=5)
+      _enqueueCommandCall(RedisCommandCall(["QUIT"], eventLoop: eventLoop))
+        .whenComplete { _ in
+          self.state = .quit
+          self.subscribeListeners.removeAll()
+          self.messageListeners.removeAll()
+        }
+    #else
+      _enqueueCommandCall(RedisCommandCall(["QUIT"], eventLoop: eventLoop))
+        .whenComplete {
+          self.state = .quit
+          self.subscribeListeners.removeAll()
+          self.messageListeners.removeAll()
+        }
+    #endif
     _processQueue()
   }
   
