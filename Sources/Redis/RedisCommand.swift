@@ -52,7 +52,11 @@ public class RedisCommandCall {
   convenience init<T: Collection>(_ values: T, eventLoop: EventLoop)
                 where T.Element : RESPEncodable
   {
-    self.init(command: RedisCommand(values), promise: eventLoop.newPromise())
+    #if swift(>=5)
+      self.init(command: RedisCommand(values), promise: eventLoop.makePromise())
+    #else
+      self.init(command: RedisCommand(values), promise: eventLoop.newPromise())
+    #endif
   }
 }
 
