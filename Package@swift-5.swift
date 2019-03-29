@@ -11,7 +11,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-nio.git", 
                  from: "2.0.0"),
         .package(url: "https://github.com/SwiftNIOExtras/swift-nio-redis.git", 
-                 from: "0.10.0")
+                 from: "0.10.2")
     ],
     targets: [
         .target    (name: "Redis",      dependencies: [ "NIORedis" ]),
