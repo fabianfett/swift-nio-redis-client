@@ -567,7 +567,7 @@ open class RedisClient : RedisCommandTarget {
   
   // MARK: - Handler Delegate
   
-  func handlerDidDisconnect(_ ctx: ChannelHandlerContext) { // Q: own
+  func handlerDidDisconnect(_ context: ChannelHandlerContext) { // Q: own
     switch state {
       case .error, .quit: break // already handled
       default: state = .disconnected
@@ -596,7 +596,7 @@ open class RedisClient : RedisCommandTarget {
   }
   
   func handlerCaughtError(_ error: Swift.Error,
-                          in ctx: ChannelHandlerContext) // Q: own
+                          in context: ChannelHandlerContext) // Q: own
   {
     retryInfo.lastSocketError = error
     state = .error(.channelError(error))
@@ -618,21 +618,35 @@ open class RedisClient : RedisCommandTarget {
       self.client = client
     }
     
-    func channelActive(ctx: ChannelHandlerContext) {
-    }
-    func channelInactive(ctx: ChannelHandlerContext) {
-      client.handlerDidDisconnect(ctx)
+    func channelInactive(context: ChannelHandlerContext) {
+      client.handlerDidDisconnect(context)
     }
     
-    func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
+    func channelRead(context: ChannelHandlerContext, data: NIOAny) {
       let value = unwrapInboundIn(data)
       client.handlerHandleResult(value)
     }
     
-    public func errorCaught(ctx: ChannelHandlerContext, error: Error) {
-      self.client.handlerCaughtError(error, in: ctx)
-      _ = ctx.close(promise: nil)
+    public func errorCaught(context: ChannelHandlerContext, error: Error) {
+      self.client.handlerCaughtError(error, in: context)
+      _ = context.close(promise: nil)
     }
+    
+    #if swift(>=5) // NIO 2 API - default
+    #else // NIO 1 API Shims
+      func channelInactive(ctx context: ChannelHandlerContext) {
+        channelInactive(context: context)
+      }
+    
+      func channelRead(ctx context: ChannelHandlerContext, data: NIOAny) {
+        channelRead(context: context, data: data)
+      }
+    
+      public func errorCaught(ctx context: ChannelHandlerContext, error: Error)
+      {
+        errorCaught(context: context, error: error)
+      }
+    #endif // NIO 1 API Shims
   }
   
 }
