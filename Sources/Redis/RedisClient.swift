@@ -206,8 +206,10 @@ open class RedisClient : RedisCommandTarget {
   var subscribedChannels = Set<String>()
   var subscribedPatterns = Set<String>()
   
-  private var subscribeListeners = EventLoopEventListenerSet<(String, Int)>()
-  private var messageListeners = EventLoopEventListenerSet<(String, String)>()
+  private var subscribeListeners  = EventLoopEventListenerSet<(String, Int)>()
+  private var psubscribeListeners = EventLoopEventListenerSet<(String, Int)>()
+  private var messageListeners =
+    EventLoopEventListenerSet<(String, String, String?)>()
   
   open func subscribe(_ channels: String...) {
     _subscribe(channels: channels)
@@ -282,7 +284,7 @@ open class RedisClient : RedisCommandTarget {
     
     let newPatterns = Set(patterns).subtracting(subscribedPatterns)
     if !newPatterns.isEmpty {
-      subscribedPatterns.formUnion(newChannels)
+      subscribedPatterns.formUnion(newPatterns)
       
       if state.isConnected {
         let call = RedisCommandCall([ "PSUBSCRIBE" ] + newPatterns,
@@ -308,7 +310,35 @@ open class RedisClient : RedisCommandTarget {
   }
   
   @discardableResult
+  open func onPSubscribe(_ cb: @escaping ( String, Int ) -> Void) -> Self {
+    if eventLoop.inEventLoop {
+      psubscribeListeners.append(cb)
+    }
+    else {
+      eventLoop.execute {
+        self.psubscribeListeners.append(cb)
+      }
+    }
+    return self
+  }
+
+  
+  @discardableResult
+  /// Executes the callback when the pub/sub system receives a message.
+  /// The callback parameters are channel and message.
   open func onMessage(_ cb: @escaping ( String, String ) -> Void) -> Self {
+    return onMessage { (channel, message, _) in
+      cb(channel, message)
+    }
+  }
+  
+  /// Executes the callback when the pub/sub system receives a message.
+  /// The callback parameters are channel, message and the pattern in case
+  /// of a pattern subscription.
+  @discardableResult
+  open func onMessage(_ cb: @escaping ( String, String, String? )
+                      -> Void) -> Self
+  {
     if eventLoop.inEventLoop {
       messageListeners.append(cb)
     }
@@ -423,13 +453,27 @@ open class RedisClient : RedisCommandTarget {
           if let channel = channel.stringValue,
              let message = message.stringValue
           {
-            return messageListeners.emit( ( channel, message ) )
+            return messageListeners.emit( ( channel, message, nil ) )
           }
-        case ( "subscribe", let channel, let count ):
+        case ( "pmessage", let pattern, let channel ):
+          if items.count > 3,
+             let pattern = pattern.stringValue,
+             let channel = channel.stringValue,
+             let message = items[3].stringValue
+          {
+            return messageListeners.emit( ( channel, message, pattern ) )
+          }
+        case ( "subscribe" , let channel, let count ),
+             ( "psubscribe", let channel, let count ):
           if let channel = channel.stringValue, let count = count.intValue {
-            return subscribeListeners.emit( (channel, count ) )
+            return subscribeListeners.emit( ( channel, count ) )
+          }
+        case ( "psubscribe", let pattern, let count ):
+          if let pattern = pattern.stringValue, let count = count.intValue {
+            return psubscribeListeners.emit( ( pattern, count ) )
           }
         case ( "unsubscribe", _, _ ): return
+        case ( "punsubscribe", _, _ ): return
         default: break
       }
     }
